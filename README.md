@@ -14,7 +14,7 @@ Omni-Auditor uses **Gemini 2.5 Flash** to perform real-time technical audits. By
 * **Mobile-Native:** Built to run entirely in a mobile browser via Google Colab.
 
 ## 🛠️ Technical Stack
-* **Model:** Gemini 1.5 Flash (Multimodal)
+* **Model:** Gemini 2.5 Flash (Multimodal)
 * **SDK:** Google GenAI Python SDK
 * **Cloud:** Google Colab, Google Sheets API, Google Auth
 * **Interface:** JavaScript-based browser camera integration
