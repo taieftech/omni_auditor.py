@@ -1,116 +1,86 @@
 import os
+import json
+import datetime
 import google.generativeai as genai
-from google.colab import output, auth, userdata
+from google.colab import output, auth, files
 from google.auth import default
 import gspread
 from IPython.display import display, Javascript
 from google.colab.output import eval_js
 from base64 import b64decode
 from PIL import Image
-
-
 try:
-    API_KEY = userdata.get('GEMINI_API_KEY')
-    genai.configure(api_key=API_KEY)
-except Exception:
-    print("❌ ERROR: API Key not found in Colab Secrets.")
-    API_KEY = input("Please enter your Gemini API Key manually: ")
-    genai.configure(api_key=API_KEY)
+    genai.configure(api_key=userdata.get('GEMINI_API_KEY'))
+except:
+    genai.configure(api_key=input("Enter Gemini API Key: "))
+model = genai.GenerativeModel('gemini-2.5-flash')
 
-
-MODEL_ID = 'gemini-2.5-flash'
-model = genai.GenerativeModel(MODEL_ID)
-
-
-def take_photo(filename='audit_capture.jpg', quality=0.8):
+def get_image():
+    """Try camera, fallback to file upload."""
     js = Javascript('''
-    async function takePhoto(quality) {
-      const div = document.createElement('div');
-      const video = document.createElement('video');
-      video.style.display = 'block';
-      video.style.borderRadius = '10px';
-      
+    async function takePhoto() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: "environment"}});
-        div.appendChild(video);
-        video.srcObject = stream;
-        await video.play();
-        document.body.appendChild(div);
-        
-        google.colab.output.setIframeHeight(document.documentElement.scrollHeight, true);
-
+        const video = document.createElement('video');
+        video.srcObject = stream; await video.play();
         const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        console.log("Waiting for tap...");
-        await new Promise((resolve) => div.onclick = resolve);
-
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+        await new Promise(r => { document.body.appendChild(video); video.onclick = r; });
         canvas.getContext('2d').drawImage(video, 0, 0);
         stream.getVideoTracks()[0].stop();
-        div.remove();
-        return canvas.toDataURL('image/jpeg', quality);
-      } catch (err) {
-        return "ERROR:" + err.message;
+        document.body.removeChild(video);
+        return canvas.toDataURL('image/jpeg', 0.9);
+      } catch {
+        return "FAILED";
       }
     }
     ''')
     display(js)
-    data = eval_js('takePhoto({})'.format(quality))
+    data = eval_js('takePhoto()')
+    if data != "FAILED":
+        binary = b64decode(data.split(',')[1])
+        with open('audit.jpg', 'wb') as f: f.write(binary)
+        return 'audit.jpg'
+    print("📁 Camera failed. Please upload an image.")
+    uploaded = files.upload()
+    return next(iter(uploaded))
+
+def parse_response(text):
+    try: return json.loads(text[text.index('{'):text.rindex('}')+1])
+    except: return {"risks":["Parse error"], "solutions":["Review manually"], "summary":"Error"}
+
+
+def audit():
+    print("📸 Get image...")
+    path = get_image()
+    display(Image.open(path))
     
-    if data.startswith("ERROR"):
-        raise Exception(f"Camera Access Failed: {data}")
-        
-    binary = b64decode(data.split(',')[1])
-    with open(filename, 'wb') as f:
-        f.write(binary)
-    return filename
+    print("🧠 Analyzing with Gemini 2.5 Flash...")
+    prompt = """Analyze this image. Return ONLY valid JSON with keys: 
+    risks (list of objects with description, severity HIGH/MEDIUM/LOW), 
+    solutions (list of strings), summary (string), confidence (0-100)."""
+    
+    resp = model.generate_content([prompt, Image.open(path)])
+    data = parse_response(resp.text)
+    
+    print("☁️ Logging...")
+    auth.authenticate_user()
+    gc = gspread.authorize(default()[0])
+    try: sh = gc.open('AuditLog')
+    except: sh = gc.create('AuditLog'); sh.sheet1.append_row(['Time','Summary','Risks','Solutions','Confidence'])
+    
+    sh.sheet1.append_row([
+        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        data.get('summary',''),
+        str([r['description'] for r in data.get('risks',[])]),
+        str(data.get('solutions',[])),
+        data.get('confidence','')
+    ])
+    
+    
+    print("\n✅ AUDIT COMPLETE")
+    print(f"📋 {data.get('summary','')} (confidence: {data.get('confidence',0)}%)")
+    for r in data.get('risks',[]): print(f"⚠️  {r['description']} [{r.get('severity','MEDIUM')}]")
+    for i,s in enumerate(data.get('solutions',[]),1): print(f"💡 {i}. {s}")
 
-
-def run_professional_audit():
-    try:
-        print("📸 Action: Point camera at subject and TAP the video feed...")
-        img_path = take_photo()
-        
-        print("🧠 Analyzing with Gemini 2.5 Flash...")
-        img = Image.open(img_path)
-        
-        
-        prompt = (
-            "You are a Senior Technical Auditor. Analyze this image for technical risks. "
-            "Return 3 distinct risks and 1 actionable solution. "
-            "Format: [RISK 1] ... [RISK 2] ... [RISK 3] ... [SOLUTION] ..."
-        )
-        
-        response = model.generate_content([prompt, img])
-        
-        if not response.text:
-            raise ValueError("Gemini returned an empty response. Check safety settings.")
-
-        
-        print("☁️ Logging to Google Cloud (Sheets)...")
-        auth.authenticate_user()
-        creds, _ = default()
-        gc = gspread.authorize(creds)
-        
-        
-        sheet_name = 'Omni-Auditor_Log'
-        try:
-            sh = gc.open(sheet_name)
-        except gspread.SpreadsheetNotFound:
-            sh = gc.create(sheet_name)
-            sh.sheet1.append_row(["Timestamp", "Audit Findings"])
-        
-        import datetime
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        sh.sheet1.append_row([timestamp, response.text])
-        
-        print(f"\n✅ AUDIT SUCCESSFUL\nFindings saved to: {sheet_name}\n")
-        print("-" * 30)
-        print(response.text)
-
-    except Exception as e:
-        print(f"\n❌ CRITICAL ERROR: {str(e)}")
-
-if __name__ == "__main__":
-    run_professional_audit()
+if __name__ == "__main__": audit()
