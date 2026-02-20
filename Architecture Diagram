@@ -1,0 +1,5 @@
+[User Camera] → [Colab Frontend] → [Gemini 2.5 Flash]
+                          ↓              ↓
+                   [Google Sheets]  [JSON Parsing]
+                          ↓              ↓
+                   [Audit Log]      [Risk Report]
