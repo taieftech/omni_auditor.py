@@ -11,12 +11,6 @@ Omni-Auditor uses **Gemini 2.5 Flash** to perform real-time technical audits. By
 - ✅ Colab Enterprise (compute backend)
 - ✅ Gemini API via Google AI Studio
 
-## Features:
-- Real-time camera capture
-- Gemini 2.5 Flash analysis
-- Automated risk assessment
-- Cloud-based audit logging
-
 ## Why This is "Live":
 - Instant camera-to-analysis pipeline
 - Real-time feedback loop
