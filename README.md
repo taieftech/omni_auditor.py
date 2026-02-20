@@ -5,8 +5,6 @@
 ## 🚀 Overview
 Omni-Auditor uses **Gemini 2.5 Flash** to perform real-time technical audits. By pointing a phone camera at hardware, documents, or code, the agent identifies risks and automatically logs structured data to the Google Cloud (via Google Sheets).
 
-# OmniAuditor - Live Visual Inspection Agent
-
 ## Google Cloud Services Used:
 - ✅ Google Sheets API (data logging)
 - ✅ Google Authentication (user security)
