@@ -8,9 +8,7 @@ from google.colab.output import eval_js
 from base64 import b64decode
 from PIL import Image
 
-# --- 1. CONFIGURATION & SECURITY ---
-# Tip: In Colab, click the Key icon (Secrets) on the left. 
-# Add a secret named 'GEMINI_API_KEY' and paste your key there.
+
 try:
     API_KEY = userdata.get('GEMINI_API_KEY')
     genai.configure(api_key=API_KEY)
@@ -19,11 +17,11 @@ except Exception:
     API_KEY = input("Please enter your Gemini API Key manually: ")
     genai.configure(api_key=API_KEY)
 
-# Use 2.5-flash for speed and reliability
+
 MODEL_ID = 'gemini-2.5-flash'
 model = genai.GenerativeModel(MODEL_ID)
 
-# --- 2. ROBUST CAMERA ENGINE ---
+
 def take_photo(filename='audit_capture.jpg', quality=0.8):
     js = Javascript('''
     async function takePhoto(quality) {
@@ -68,7 +66,7 @@ def take_photo(filename='audit_capture.jpg', quality=0.8):
         f.write(binary)
     return filename
 
-# --- 3. AUDIT & LOGGING LOGIC ---
+
 def run_professional_audit():
     try:
         print("📸 Action: Point camera at subject and TAP the video feed...")
@@ -77,7 +75,7 @@ def run_professional_audit():
         print("🧠 Analyzing with Gemini 2.5 Flash...")
         img = Image.open(img_path)
         
-        # Enhanced Prompt for Professional Results
+        
         prompt = (
             "You are a Senior Technical Auditor. Analyze this image for technical risks. "
             "Return 3 distinct risks and 1 actionable solution. "
@@ -89,13 +87,13 @@ def run_professional_audit():
         if not response.text:
             raise ValueError("Gemini returned an empty response. Check safety settings.")
 
-        # Cloud Logging
+        
         print("☁️ Logging to Google Cloud (Sheets)...")
         auth.authenticate_user()
         creds, _ = default()
         gc = gspread.authorize(creds)
         
-        # Find or Create Sheet
+        
         sheet_name = 'Omni-Auditor_Log'
         try:
             sh = gc.open(sheet_name)
@@ -114,6 +112,5 @@ def run_professional_audit():
     except Exception as e:
         print(f"\n❌ CRITICAL ERROR: {str(e)}")
 
-# --- 4. EXECUTION ---
 if __name__ == "__main__":
     run_professional_audit()
