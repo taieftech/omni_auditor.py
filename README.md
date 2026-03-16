@@ -29,7 +29,11 @@ Omni-Auditor uses **Gemini 2.5 Flash** to perform real-time technical audits. By
 * **Interface:** JavaScript-based browser camera integration
 
 ## 📖 How to Use
-1. Open the [Google Colab Notebook](https://colab.research.google.com/#scrollTo=LjYoWiASmO5Z).
+If you directly use omni_auditor.py directly:
+1. Open the [Google Colab Notebook](https://colab.research.google.com/).
 2. Run the cell and grant camera permissions.
 3. Point your phone at a technical object and tap the screen.
 4. View the live audit results and check your Google Drive for the generated spreadsheet.
+
+Else (If you want to use more securely):
+You can use Google cloud directly as backend and colab as frontend. Both codes are given.
