@@ -33,7 +33,7 @@ except:
     API_KEY = None
 
 if not API_KEY:
-    API_KEY = 'AIzaSyDU_MbRj2XBhNgCsrwpXP0GOV_XnpDDuDc'  # Replace with your key
+    API_KEY = 'GEMINI_KEY'  # Replace with your key
 
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('gemini-2.5-flash')
